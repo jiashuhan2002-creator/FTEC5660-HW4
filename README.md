@@ -1,6 +1,6 @@
 # FTEC5660 Homework 4 — the retrieval half of a RAG assistant
 
-Name: Shuhan Jia · Student ID: ____________
+Name: Shuhan Jia · Student ID: 1155267069
 
 The generator is fixed; everything that decides what it sees is here: HTML and table parsing,
 section-aware chunking with metadata, query parsing, a lexical retriever that returns at most five
