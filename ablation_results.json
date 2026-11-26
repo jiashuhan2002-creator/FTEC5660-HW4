@@ -6,6 +6,7 @@
     "task3": 0.0,
     "in_context": 0.4,
     "chunks": 369,
+    "accuracy": 0.43333333333333335,
     "variant": "B0",
     "change": "naive RAG (tutorial 7)"
   },
@@ -16,6 +17,7 @@
     "task3": 0.0,
     "in_context": 0.6666666666666666,
     "chunks": 790,
+    "accuracy": 0.85,
     "variant": "V1",
     "change": "+ table_to_text & section chunks"
   },
@@ -26,6 +28,7 @@
     "task3": 0.3571428571428572,
     "in_context": 0.7833333333333333,
     "chunks": 790,
+    "accuracy": 0.9166666666666666,
     "variant": "V2",
     "change": "+ metadata filter (query parsing)"
   },
@@ -36,6 +39,7 @@
     "task3": 0.3571428571428572,
     "in_context": 0.8333333333333334,
     "chunks": 790,
+    "accuracy": 0.95,
     "variant": "V3",
     "change": "+ year/section/coverage boosts"
   },
@@ -46,6 +50,7 @@
     "task3": 0.3571428571428572,
     "in_context": 0.85,
     "chunks": 790,
+    "accuracy": 0.9666666666666667,
     "variant": "V4",
     "change": "+ per-company quota"
   },
@@ -56,6 +61,7 @@
     "task3": 1.0,
     "in_context": 1.0,
     "chunks": 790,
+    "accuracy": 1.0,
     "variant": "V5",
     "change": "+ abstention (submitted)"
   }

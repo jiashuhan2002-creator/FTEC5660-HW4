@@ -16,10 +16,10 @@ python3 hw4.py --data-folder public_test     # writes results.csv and prints the
 python3 ablation.py                          # Task 5 ladder, no LLM needed
 ```
 
-`ablation.py` and `eval_local.py` never call a model: they score tables, chunks, query parsing,
-recall and abstention directly, so the ablation can be re-run without spending tokens.
-Add `--with-generator` to `ablation.py` (needs `DEEPSEEK_API_KEY`) to fill the accuracy column by
-calling the real generator on each variant.
+By default `ablation.py` and `eval_local.py` call no model: they score tables, chunks, query parsing,
+recall and abstention directly, so the ladder can be re-run without spending tokens. The table in
+§3.2 was produced with `python3 ablation.py --with-generator`, which adds the official Task 4
+accuracy of each variant by calling the real generator (about 280 calls, $0.05 in total).
 
 ## 2. Public-test results
 
@@ -31,9 +31,10 @@ calling the real generator on each variant.
 | 2.2 | query fields right (companies / fiscal year / doc type) | 100.0% |
 | 2.3 | recall@5 on answerable questions | 100.0% (46/46) |
 | 3 | kept 100.0% · rejected 100.0% | Task 3 value 1.00 |
-| 4 | answer accuracy of the fixed generator | needs your API key: run `hw4.py` |
+| 4 | answer accuracy of the fixed generator | 100.0% (46/46) |
 
-A full run takes about a second for 40 documents and 790 chunks, well inside the 30-minute limit.
+A full run takes about six seconds for 40 documents, 790 chunks and 46 generator calls, well inside
+the 30-minute limit, and costs $0.008 (54.6k input tokens, 165 output tokens).
 
 ## 3. Homework 4 solution
 
@@ -93,29 +94,38 @@ customer"). Words are matched on their first six characters, so "borrowing" find
 
 Every row adds one component to the row above it and is measured on the whole public set.
 *Recall@5* is the handout's definition; *kept* and *rejected* are the two halves of Task 3;
+*answer accuracy* is the official Task 4 score of that variant (`ablation.py --with-generator`);
 *gold in context* is the share of the 60 questions whose gold answer is present in what the generator
-would see (an upper bound on end-to-end accuracy, used because the accuracy column needs an API key).
+would see, i.e. the ceiling that a perfect generator could reach.
 
-| Variant | Change | recall@5 | kept | rejected | gold in context |
-|---|---|---|---|---|---|
-| B0 | naive RAG (tutorial 7) | 26.1% | 100.0% | 0.0% | 40.0% |
-| V1 | + table_to_text & section chunks | 84.8% | 100.0% | 0.0% | 66.7% |
-| V2 | + metadata filter (query parsing) | 89.1% | 100.0% | 35.7% | 78.3% |
-| V3 | + year/section/coverage boosts | 97.8% | 100.0% | 35.7% | 83.3% |
-| V4 | + per-company quota | 100.0% | 100.0% | 35.7% | 85.0% |
-| V5 | + abstention (submitted) | 100.0% | 100.0% | 100.0% | 100.0% |
+| Variant | Change | recall@5 | kept | rejected | answer accuracy | gold in context |
+|---|---|---|---|---|---|---|
+| B0 | naive RAG (tutorial 7) | 26.1% | 100.0% | 0.0% | 43.3% | 40.0% |
+| V1 | + table_to_text & section chunks | 84.8% | 100.0% | 0.0% | 85.0% | 66.7% |
+| V2 | + metadata filter (query parsing) | 89.1% | 100.0% | 35.7% | 91.7% | 78.3% |
+| V3 | + year/section/coverage boosts | 97.8% | 100.0% | 35.7% | 95.0% | 83.3% |
+| V4 | + per-company quota | 100.0% | 100.0% | 35.7% | 96.7% | 85.0% |
+| V5 | + abstention (submitted) | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
 
 **What each step bought.** Table text is by far the largest single lever: B0 → V1 is +58.7 points of
-recall, because 22 of the 46 answerable questions ask for a figure inside a table and naive
-`get_text()` turns a balance sheet into a stream of numbers with no row or column attached to them.
-Metadata filtering adds 4.3 points and, more importantly, takes the rejected share from 0% to 35.7%:
-the five questions about FY2021/FY2022 are now structurally impossible instead of accidentally
-answered. The ranking boosts add 8.7 points by settling the ambiguity that BM25 cannot: every report
-mentions two years, so "which 2024 column" has to come from the chunk's metadata, not from its words.
-The per-company quota adds the last 2.2 points, all of them comparative questions that previously
-received five chunks of the same company. Abstention does not change recall at all — that is the
-point: it only moves the unanswerable questions from "answered with someone else's number" to `[]`,
-which is what takes *gold in context* from 85.0% to 100.0%.
+recall and +41.7 points of accuracy, because 22 of the 46 answerable questions ask for a figure inside
+a table and naive `get_text()` turns a balance sheet into a stream of numbers with no row or column
+attached to them. Metadata filtering adds 4.3 points of recall and 6.7 of accuracy, and, more
+importantly, takes the rejected share from 0% to 35.7%: the five questions about FY2021/FY2022 are now
+structurally impossible instead of accidentally answered. The ranking boosts add 8.7 points of recall
+and 3.3 of accuracy by settling the ambiguity that BM25 cannot: every report mentions two years, so
+"which 2024 column" has to come from the chunk's metadata, not from its words. The per-company quota
+adds the last 2.2 points of recall and 1.7 of accuracy, all of them comparative questions that
+previously received five chunks of the same company. Abstention does not change recall at all — that
+is the point: it only moves the unanswerable questions from "answered with someone else's number" to
+`[]`, which is what takes *gold in context* from 85.0% to 100.0% and closes the last five answers.
+
+One thing the two columns disagree about is worth stating: accuracy is *above* gold-in-context at
+every variant (43.3 vs 40.0, 96.7 vs 85.0). The gold-in-context test looks for the gold answer as a
+string, so a chunk that holds `492.1` in a table row and a question whose gold answer is `492.1`
+match, but a figure written as `USD 492.1 million` in prose does not. Accuracy is therefore the
+truer number and gold-in-context only a floor: when the string is present the generator almost always
+gets it right, which is why the accuracy column tracks it at roughly the same level.
 
 ### 3.3 Error analysis
 
